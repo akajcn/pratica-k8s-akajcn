@@ -1,0 +1,59 @@
+# Criacao do configmap
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cm-frontend
+  namespace: ns-guess
+  labels:
+    app: frontend
+data:
+  REACT_APP_BACKEND_URL: "http://game.guess-game.com"
+
+---
+
+# Criacao do deploy
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guess-frontend
+  namespace: ns-guess
+spec:
+  selector:
+    matchLabels:
+      app: guess-frontend
+  template:
+    metadata:
+      labels:
+        app: guess-frontend
+    spec:
+      containers:
+        - name: guess-frontend
+          image: akajcn/frontend-guess:latest
+          env:
+            - name: REACT_APP_BACKEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cm-frontend
+                  key: REACT_APP_BACKEND_URL
+          ports:
+            - containerPort: 3000
+          
+---
+
+# Criacao do service
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-frontend
+  namespace: ns-guess
+spec:
+  selector:
+    app: guess-frontend
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+  type: ClusterIP

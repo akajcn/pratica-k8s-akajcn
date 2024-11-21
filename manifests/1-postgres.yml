@@ -1,0 +1,126 @@
+# Criacao do StorageClass
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: sc-postgres
+provisioner: kubernetes.io/no-provisioner # indicates that this StorageClass does not support automatic provisioning
+volumeBindingMode: WaitForFirstConsumer
+
+---
+
+# Criacao do pv
+
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pv-postgres
+  labels:
+    type: local
+    app: postgres
+spec:
+  storageClassName: sc-postgres
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/mnt/gg-data/"
+
+---
+
+# Criacao do PVC
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-postgres
+  namespace: ns-guess
+  labels:
+    app: postgres
+spec:
+  storageClassName: sc-postgres
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 3Gi
+
+---
+
+# Criacao dos secrets
+
+apiVersion: v1
+kind: Secret
+metadata: 
+  name: secret-postgres
+  namespace: ns-guess
+  labels:
+    app: postgres
+type: Opaque
+data:
+  POSTGRES_DB: ZGJndWVzcw==
+  POSTGRES_USER: dXNlcmd1ZXNz
+  POSTGRES_PASSWORD: cGFzc2d1ZXNz
+
+---
+
+# Criacao do deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-postgres
+  namespace: ns-guess
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:latest
+          resources:
+            requests:
+              cpu: "0.3"
+              memory: "256Mi"
+            limits:
+              cpu: "0.5"
+              memory: "512Mi"
+          envFrom:
+            - secretRef:
+                name: secret-postgres
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: pg-data
+          ports:
+            - containerPort: 5432
+      volumes:
+        - name: pg-data
+          persistentVolumeClaim:
+            claimName: pvc-postgres
+
+---
+
+# Criacao do service
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-postgres
+  namespace: ns-guess
+  labels:
+    app: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP

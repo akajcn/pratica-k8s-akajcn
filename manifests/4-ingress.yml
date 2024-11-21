@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-guess
+  namespace: ns-guess
+spec:
+  rules:
+    - host: game.guess-game.com
+      http:
+        paths:
+          - path: /create
+            pathType: Prefix
+            backend:
+              service:
+                name: svc-backend
+                port:
+                  number: 5000
+          - path: /breaker
+            pathType: Prefix
+            backend:
+              service:
+                name: svc-backend
+                port:
+                  number: 5000
+          - path: /guess
+            pathType: Prefix
+            backend:
+              service:
+                name: svc-backend
+                port:
+                  number: 5000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: svc-frontend
+                port:
+                  number: 3000

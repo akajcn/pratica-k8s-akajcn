@@ -1,0 +1,116 @@
+# Criacao do configmap
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cm-backend
+  namespace: ns-guess
+  labels:
+    app: backend
+data:
+  FLASK_APP: "run.py"
+  FLASK_DB_TYPE: "postgres"
+  FLASK_DB_NAME: "dbguess"
+  FLASK_DB_HOST: "svc-postgres"
+  FLASK_DB_PORT: "5432"
+
+---
+
+# Criacao do secrets
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret-backend
+  namespace: ns-guess
+type: Opaque
+data:
+  FLASK_DB_USER: dXNlcmd1ZXNz
+  FLASK_DB_PASSWORD: cGFzc2d1ZXNz
+
+---
+
+# Criacao do Deploy
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guess-backend
+  namespace: ns-guess
+spec:
+  selector:
+    matchLabels:
+      app: guess-backend
+  template:
+    metadata:
+      labels:
+        app: guess-backend
+    spec:
+      containers:
+        - name: guess-backend
+          image: akajcn/backend-guess:latest
+          resources:
+            requests:
+              cpu: "0.3"
+              memory: "256Mi"
+            limits:
+              cpu: "0.5"
+              memory: "512Mi"
+          envFrom:
+            - configMapRef:
+                name: cm-backend
+            - secretRef:
+                name: secret-backend
+          ports:
+            - containerPort: 5000
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      
+
+---
+
+# Criacao do service
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-backend
+  namespace: ns-guess
+spec:
+  selector:
+    app: guess-backend
+  ports:
+    - protocol: TCP
+      port:  5000
+      targetPort: 5000
+  type: ClusterIP
+
+---
+
+# Criacao do HPA
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-backend
+  namespace: ns-guess
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: guess-backend
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
