@@ -209,24 +209,31 @@ Com isso, o deploy foi realizado com sucesso!
 
 Antes de acessar o jogo, devemos realizar uma alteração em nosso sistema operacional no arquivo **/etc/hosts**
 
-Primeiramente, devemos retornar o IP do minikube, com o comando abaixo:
+Para inserir o ip do minikube no arquivo em questão, utilizaremos o seguinte comando (sendo necessario utilizar senha com permissão root):
 
 ```
-minikube ip
+echo "$(minikube ip) game.guess-game.com" | sudo tee -a /etc/hosts
 ```
-
-Após, retornar o ip, devemos realizar a alteração em nosso arquivo **/etc/hosts** com o comando
-
-```
-sudo vim /etc/hosts
-```
-e adicionar o seguinte conteudo
+Para verificar se o conteúdo acima foi adicionado, executamos o seguinte comando:
 
 ```
-IP-MINIKUBE     game.guess-game.com
+cat /etc/hosts
 ```
 
-Após isso, salve o conteudo do arquivo, abra seu navegador e acesse o seguinte link:
+Devemos ter uma saída similar a esta:
+
+```
+127.0.0.1 localhost
+127.0.1.1 valinor
+192.168.49.2    game.guess-game.com
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+```
+Após estes passos, abrimos o navegador e digitamos a seguinte URL:
 
 ```
 http://game.guess-game.com
