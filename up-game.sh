@@ -28,7 +28,7 @@ for file in "$DIRECTORY"/*.yml; do
     echo ""
     exit 1
   fi
-sleep 10
+sleep 20
 done
 
 echo "Deploy concluído com sucesso!"
